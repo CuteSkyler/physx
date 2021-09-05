@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<head>
+    <meta charset=UTF-8>
+    <link rel="stylesheet" type="text/css" href="stylesheet.css">
+    <title>PhysX</title>
+</head>
+<body onmousemove="coordinate(event)" onkeydown="uhh(event)">
+    <input type="number" id="number"><input type="number" id="number2"><input type="number" id="am1"><input type="number" id="am2">
+    <script src="matter.js"></script>
+    <script>
+        var num = document.getElementById("number").value
+        var am1 = document.getElementById("am1").value
+        var am2 = document.getElementById("am2").value
+        var vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+        var vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+        var vwA = num*(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0));
+        var vhA = num*(Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0));
+        setInterval(() => {
+            if(!document.getElementById("number").value){
+                num = 1
+                am1 = 1
+                am2 = 2
+            };
+            am1 = document.getElementById("am1").value
+            am2 = document.getElementById("am2").value
+            num = document.getElementById("number").value
+            vwA = num*(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0));
+            vhA = num*(Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0));
+        }, 50);
+        var mousex = 0
+        var mousey = 0
+        var size = 0.95*vh
+        let engine = Matter.Engine.create();
+        let render = Matter.Render.create({
+            element: document.body,
+            engine: engine,
+            options: {
+                width: 0.95*vw,
+                height: 0.95*vh
+            }
+        });
+        let ground = Matter.Bodies.rectangle(0.96*vh,0.96*vh,vw,60,{isStatic: true});
+        var size = "10"
+        let mouse = Matter.Mouse.create(render.canvas);
+        let mouseConstraint = Matter.MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: {
+                render: {visible: false}
+            }
+        });
+        render.mouse = mouse;
+        Matter.World.add(engine.world,[mouse, mouseConstraint, ground]);
+        Matter.Runner.run(engine);
+        Matter.Render.run(render);
+        function addRectangle(sX, sY, x, y){
+            var block = Matter.Bodies.rectangle(x, y, sX, sY);
+            Matter.World.add(engine.world,[block]);
+            return;
+        };
+        function addRectangles(sX, sY, x, y, am){
+            for(let i = 0; i < am; i++){
+                addRectangle(sX, sY, x, y);
+            };
+            return;
+        };
+        function addSquare(fx, x, y){
+            var block = Matter.Bodies.rectangle(x, y, fx, fx);
+            Matter.World.add(engine.world,[block]);
+            return;
+        };
+        function addSquares(fx, x, y, am){
+            for(let i = 0; i < am; i++){
+                addSquare(fx, x, y,);
+            };
+            return;
+        };
+        function clear(){
+            Matter.Engine.clear(engine);
+        };
+
+        function coordinate(event) {
+            mousex = event.clientX;
+            mousey = event.clientY;
+        };
+
+
+        function uhh(uhh){
+            var circle = Matter.Bodies.circle(mousex, mousey, 0.05*vhA, 0.05*vhA);
+            var square = Matter.Bodies.rectangle(mousex, mousey, 0.1*vhA, 0.1*vhA);
+            var rectangle = Matter.Bodies.rectangle(mousex, mousey, 0.4*vhA, 0.04*vhA);
+            var pyramid = Matter.Composites.pyramid(mousex, mousey, am1, am2, 0, 0, function(x, y) {
+                return Matter.Bodies.rectangle(x, y, 0.1*vhA, 0.1*vhA,);
+            });
+            var stack = Matter.Composites.stack(mousex, mousey, am1, am2, 0, 0, function(x, y) {
+                return Matter.Bodies.rectangle(x, y, 0.1*vhA, 0.1*vhA,);
+            });
+            var border1 = Matter.Bodies.rectangle(0,0,60,2*vhA,{isStatic: true});
+            var border2 = Matter.Bodies.rectangle(0.96*vwA,0,60,2*vhA,{isStatic: true});
+            var border3 = Matter.Bodies.rectangle(0,0,2*vwA,60,{isStatic: true});
+            var car = Matter.Composites.car(mousex, mousey, 0.1*vwA, 0.02*vwA, 0.02*vwA);
+            var softbody = Matter.Composites.softBody(mousex, mousey, Math.floor(0.0025*vwA), Math.floor(0.0025*vwA), 5, 5, true, 15);
+            var cradle = Matter.Composites.newtonsCradle(mousex, mousey, 10, 0.05*vhA, 0.25*vhA);
+            var rotatingA = Matter.Bodies.rectangle(mousex, mousey, 0.4*vhA, 0.04*vhA, {inertia: Infinity,currentRotation: 0,rotationSpeed: 1, isStatic: true});
+            var rotatingB = Matter.Bodies.rectangle(mousex, mousey, 0.04*vhA, 0.4*vhA, {inertia: Infinity,currentRotation: 0,rotationSpeed: 1, isStatic: true});
+            var circleS = Matter.Bodies.circle(mousex, mousey, 0.05*vhA);
+            var slingshot = Matter.Constraint.create({
+                pointA: {x: mousex, y: mousey},
+                bodyB: circleS,
+                stiffness: 0.05,
+            });
+            let firing = false;
+            let exists = false;
+            var slingX = 0
+            var slingY = 0
+            Matter.Events.on(mouseConstraint, 'enddrag', function(e){
+                if(e.body === circleS) firing = true;
+            });
+            Matter.Events.on(engine, 'afterUpdate', function(){
+                if(firing && Math.abs(circleS.position.x-slingX)<20 && Math.abs(circleS.position.y-slingY)<20){
+                    circleS = Matter.Bodies.circle(slingX, slingY, 0.05*vhA);
+                    Matter.World.add(engine.world, circleS);
+                    slingshot.bodyB = circleS;
+                    firing = false;
+                };
+            });
+            if(uhh.key === "q"){
+                console.log("square")
+                Matter.World.add(engine.world,[square]);
+            }
+            else if(uhh.key === "w"){
+                console.log("circle")
+                Matter.World.add(engine.world,[circle]);
+            }
+            else if(uhh.key === "e"){
+                console.log("rectangle")
+                Matter.World.add(engine.world,[rectangle]);
+            }
+            else if(uhh.key === "r"){
+                console.log("pyramid")
+                Matter.World.add(engine.world,[pyramid]);
+            }
+            else if(uhh.key === "t"){
+                console.log("stack")
+                Matter.World.add(engine.world,[stack]);
+            }
+            else if(uhh.key === "y"){
+                console.log("car")
+                Matter.World.add(engine.world,[car]);
+            }
+            else if(uhh.key === "u"){
+                console.log("softbody")
+                Matter.World.add(engine.world,[softbody]);
+            }
+            else if(uhh.key === "i"){
+                console.log("cradle")
+                Matter.World.add(engine.world,[cradle]);
+            }
+            else if(uhh.key === "a"){
+                console.log("rotating")
+                Matter.World.add(engine.world,[rotatingA]);
+            }
+            else if(uhh.key === "s"){
+                console.log("rotating")
+                Matter.World.add(engine.world,[rotatingB]);
+            }
+            else if(uhh.key === "p"){
+                console.log("slingshot")
+                if(!exists){
+                    exists = true;
+                    slingX = mousex
+                    slingY = mousey
+                    Matter.World.add(engine.world,[circleS]);
+                    Matter.World.add(engine.world,[slingshot]);
+                }
+            }
+            else if(uhh.key === "b"){
+                Matter.World.add(engine.world,[border1, border2, border3]);
+            }
+        };
+    </script>
+</body>
